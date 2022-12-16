@@ -1,0 +1,8 @@
+# ConfigMap to expose configuration related to backend application
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-conf # name of configMap
+  namespace: exam
+data:
+  server-uri: 10.106.249.63 # enternal ip of backend application 'Service'

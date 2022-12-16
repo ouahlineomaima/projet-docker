@@ -1,0 +1,74 @@
+# Define 'Service' to expose FrontEnd Application
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: exam
+spec:
+  selector: # pod labels should match these
+    app: exam-app
+    tier: frontend
+  ports:
+    - protocol: "TCP"
+      port: 3000
+      targetPort: 3000
+  type: NodePort # use NodePort if you are not running Kubernetes on Cloud
+---
+# 'Deployment' to manage of configuration of frontEnd Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: to-do-app-frontend
+  namespace: exam
+  labels: # pod labels should match these
+    app: exam-app
+    tier: frontend
+spec:
+  replicas: 2  # number of replicas of frontEnd application
+  selector:
+    matchLabels: 
+      app: exam-app
+      tier: frontend
+  template:
+    metadata:
+      labels: # Must match 'Service' and 'Deployment' labels
+        app: exam-app
+        tier: frontend  
+    spec:                 
+      containers: 
+      - name: frontend
+        image: omaima2024/mini-projet:remote-frontend-image
+        args:
+          - /bin/sh
+          - -c
+          - touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600 
+        livenessProbe:
+          exec:
+            command:
+              - cat
+              - /tmp/healthy
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /tmp/healthy
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        startupProbe:
+          exec:
+              command:
+              - cat
+              - /etc/hostname
+          periodSeconds: 10
+          failureThreshold: 10
+        env: # Setting Environmental Variables
+          -  name: SERVER_URI # Setting Backend URI from configMap
+             valueFrom:
+               configMapKeyRef:
+                 name: backend-conf # Name of configMap
+                 key: server-uri
+        ports:
+        - containerPort: 3000

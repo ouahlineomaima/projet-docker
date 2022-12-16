@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  db:
+    container_name: "mongodb-service"  
+    image: "localhost:8000/registry-mongo:latest"
+    networks:
+      - mynetwork
+    volumes:
+      - volmongo:/data/db
+  backend:
+    container_name: "backend"
+    image: "localhost:8000/registry-backend-image:latest"
+    ports:
+      - "5000:5000"
+    networks:
+      - mynetwork    
+  frontend:
+    container_name: "frontend"
+    image: "localhost:8000/registry-frontend-image:latest"
+    ports:
+      - "3000:80" 
+    networks:
+      - mynetwork   
+volumes:
+  volmongo:
+    driver: local
+networks:
+  mynetwork: {}  

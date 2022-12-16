@@ -1,0 +1,87 @@
+# Define a 'Service' To Expose mysql to Other Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service  # DNS name 
+  namespace: exam
+  labels:
+    app: mongodb
+    tier: database
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+  selector:       # mysql Pod Should contain same labels
+    app: mongodb
+    tier: database
+  type: NodePort
+---
+# Define a 'Persistent Voulume Claim'(PVC) for Mysql Storage, dynamically provisioned by cluster
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pv-claim # name of PVC essential for identifying the storage data 
+  namespace: exam
+  labels:
+    app: mongodb
+    tier: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Configure 'Deployment' of mysql server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: exam
+  labels:
+    app: mongodb
+    tier: database
+spec:
+  selector: # mysql Pod Should contain same labels 
+    matchLabels:
+      app: mongodb
+      tier: database
+  strategy:
+    type: Recreate
+  replicas: 2
+  template:
+    metadata:
+      labels: # Must match 'Service' and 'Deployment' selectors
+        app: mongodb
+        tier: database
+      name: mongodb
+    spec:
+      containers:
+      - image: mongo # image from docker-hub
+        name: mongodb
+        env:
+        - name: MONGO_USER # Setting USER username on mysql From a 'Secret'
+          valueFrom:
+            secretKeyRef:
+              name: mongo-db-credentials 
+              key: username
+        - name: MONGO_PASSWORD # Setting USER Password on mysql From a 'Secret'
+          valueFrom:
+            secretKeyRef:
+              name: mongo-db-credentials 
+              key: password
+        - name: MYSQL_DATABASE # Setting Database Name from a 'ConfigMap'
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-db-conf
+              key: name
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        volumeMounts:        # Mounting voulume obtained from Persistent Volume Claim
+        - name: mongodb-persistent-storage
+          mountPath: /var/lib/mongodb
+      volumes:
+      - name: mongodb-persistent-storage # Obtaining 'vloume' from PVC
+        persistentVolumeClaim:
+          claimName: mongodb-pv-claim

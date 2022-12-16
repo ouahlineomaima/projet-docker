@@ -1,0 +1,9 @@
+# Define 'Configmap' to store non-sensitive database configuration 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-db-conf  # name of ConfigMap, referenced in other files
+  namespace: exam
+data:
+  host: mongodb-service   # host address of mysql server, we are using DNS of Service
+  name: exam # name of the database for application
